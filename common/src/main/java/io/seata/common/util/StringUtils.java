@@ -16,17 +16,15 @@
 package io.seata.common.util;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.sql.Blob;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
-import javax.sql.rowset.serial.SerialBlob;
+import io.seata.common.Constants;
+import io.seata.common.exception.ShouldNeverHappenException;
 
 /**
  * The type String utils.
@@ -37,9 +35,13 @@ import javax.sql.rowset.serial.SerialBlob;
 public class StringUtils {
 
     private StringUtils() {
-
     }
 
+    /**
+     * empty string
+     */
+    public static final String EMPTY = "";
+    
     /**
      * Is empty boolean.
      *
@@ -54,7 +56,7 @@ public class StringUtils {
      * Is blank string ?
      *
      * @param str the str
-     * @return boolean
+     * @return boolean boolean
      */
     public static boolean isBlank(String str) {
         int length;
@@ -74,7 +76,7 @@ public class StringUtils {
      * Is Not blank string ?
      *
      * @param str the str
-     * @return boolean
+     * @return boolean boolean
      */
     public static boolean isNotBlank(String str) {
         int length;
@@ -89,113 +91,6 @@ public class StringUtils {
             }
         }
         return false;
-    }
-
-    /**
-     * String 2 blob blob.
-     *
-     * @param str the str
-     * @return the blob
-     * @throws SQLException the sql exception
-     */
-    public static Blob string2blob(String str) throws SQLException {
-        if (str == null) {
-            return null;
-        }
-        return new SerialBlob(str.getBytes());
-    }
-
-    /**
-     * Blob 2 string string.
-     *
-     * @param blob the blob
-     * @return the string
-     * @throws SQLException the sql exception
-     */
-    public static String blob2string(Blob blob) throws SQLException {
-        if (blob == null) {
-            return null;
-        }
-
-        return new String(blob.getBytes((long)1, (int)blob.length()));
-    }
-
-    /**
-     * Input stream 2 string string.
-     *
-     * @param is the is
-     * @return the string
-     * @throws IOException the io exception
-     */
-    public static String inputStream2String(InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int i = -1;
-        while ((i = is.read()) != -1) {
-            baos.write(i);
-        }
-        return baos.toString();
-    }
-
-    /**
-     * Object.toString()
-     *
-     * @param obj the obj
-     * @return string
-     */
-    public static String toString(Object obj){
-        if (obj == null){
-            return "null";
-        }
-        if(obj.getClass().isPrimitive()){
-            return String.valueOf(obj);
-        }
-        if(obj instanceof String){
-            return (String) obj;
-        }
-        if(obj instanceof Number || obj instanceof Character || obj instanceof Boolean){
-            return String.valueOf(obj);
-        }
-        if(obj instanceof Date){
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").format(obj);
-        }
-        if(obj instanceof Collection){
-            StringBuilder sb = new StringBuilder();
-            sb.append("[");
-            if (!((Collection)obj).isEmpty()) {
-                for(Object o : (Collection)obj){
-                    sb.append(toString(o)).append(",");
-                }
-                sb.deleteCharAt(sb.length()-1);
-            }
-            sb.append("]");
-            return sb.toString();
-        }
-        if(obj instanceof Map){
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            if(!((Map)obj).isEmpty()){
-                for(Object k : ((Map)obj).keySet()){
-                    Object v = ((Map)obj).get(k);
-                    sb.append(toString(k)).append("->").append(toString(v)).append(",");
-                }
-                sb.deleteCharAt(sb.length()-1);
-            }
-            sb.append("}");
-        }
-        StringBuilder sb = new StringBuilder();
-        Field[] fields = obj.getClass().getDeclaredFields();
-        for(Field field : fields) {
-            field.setAccessible(true);
-            sb.append(field.getName());
-            sb.append("=");
-            try {
-                Object f = field.get(obj);
-                sb.append(toString(f));
-            }catch(Exception e) {
-            }
-            sb.append(";");
-        }
-        return sb.toString();
     }
 
     /**
@@ -224,5 +119,111 @@ public class StringUtils {
             return b == null;
         }
         return a.equalsIgnoreCase(b);
+    }
+
+    /**
+     * Input stream 2 string string.
+     *
+     * @param is the is
+     * @return the string
+     */
+    public static String inputStream2String(InputStream is) {
+        if (is == null) {
+            return null;
+        }
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int i = -1;
+            while ((i = is.read()) != -1) {
+                baos.write(i);
+            }
+            return baos.toString(Constants.DEFAULT_CHARSET_NAME);
+        } catch (Exception e) {
+            throw new ShouldNeverHappenException(e);
+        }
+    }
+
+    /**
+     * Input stream to byte array
+     *
+     * @param is the is
+     * @return the byte array
+     */
+    public static byte[] inputStream2Bytes(InputStream is) {
+        if (is == null) {
+            return null;
+        }
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int i = -1;
+            while ((i = is.read()) != -1) {
+                baos.write(i);
+            }
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new ShouldNeverHappenException(e);
+        }
+    }
+
+    /**
+     * Object.toString()
+     *
+     * @param obj the obj
+     * @return string string
+     */
+    public static String toString(Object obj) {
+        if (obj == null) {
+            return "null";
+        }
+        if (obj.getClass().isPrimitive()) {
+            return String.valueOf(obj);
+        }
+        if (obj instanceof String) {
+            return (String)obj;
+        }
+        if (obj instanceof Number || obj instanceof Character || obj instanceof Boolean) {
+            return String.valueOf(obj);
+        }
+        if (obj instanceof Date) {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").format(obj);
+        }
+        if (obj instanceof Collection) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            if (!((Collection)obj).isEmpty()) {
+                for (Object o : (Collection)obj) {
+                    sb.append(toString(o)).append(",");
+                }
+                sb.deleteCharAt(sb.length() - 1);
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        if (obj instanceof Map) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            if (!((Map)obj).isEmpty()) {
+                for (Object k : ((Map)obj).keySet()) {
+                    Object v = ((Map)obj).get(k);
+                    sb.append(toString(k)).append("->").append(toString(v)).append(",");
+                }
+                sb.deleteCharAt(sb.length() - 1);
+            }
+            sb.append("}");
+        }
+        StringBuilder sb = new StringBuilder();
+        Field[] fields = obj.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            sb.append(field.getName());
+            sb.append("=");
+            try {
+                Object f = field.get(obj);
+                sb.append(toString(f));
+            } catch (Exception e) {
+            }
+            sb.append(";");
+        }
+        return sb.toString();
     }
 }
